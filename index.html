@@ -277,8 +277,10 @@
       background:var(--nav-bg);
       backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
       border-top:1px solid var(--border);
-      padding:10px 20px 10px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      padding-top: 10px;
+      padding-left: 20px;
+      padding-right: 20px;
+      padding-bottom: env(safe-area-inset-bottom, 10px);
       display:flex; justify-content:space-around; align-items:center;
       z-index:100;
     }
@@ -291,7 +293,7 @@
     #fab {
       position: fixed;
       right: 20px;
-      bottom: calc(max(72px, 60px + env(safe-area-inset-bottom)));
+      bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
       width: 52px; height: 52px;
       background: var(--ok);
       color: #0f0f11;
