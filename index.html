@@ -100,7 +100,7 @@
     .app-shell {
       max-width: 680px;
       margin: 0 auto;
-      padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom)));
+      padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
     }
 
     /* HEADER */
@@ -277,10 +277,8 @@
       background:var(--nav-bg);
       backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
       border-top:1px solid var(--border);
-      padding-top: 10px;
-      padding-left: 20px;
-      padding-right: 20px;
-      padding-bottom: env(safe-area-inset-bottom, 10px);
+      padding: 10px 20px 10px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       display:flex; justify-content:space-around; align-items:center;
       z-index:100;
     }
@@ -293,7 +291,7 @@
     #fab {
       position: fixed;
       right: 20px;
-      bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+      bottom: calc(74px + env(safe-area-inset-bottom, 0px));
       width: 52px; height: 52px;
       background: var(--ok);
       color: #0f0f11;
