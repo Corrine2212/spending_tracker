@@ -1127,15 +1127,20 @@ document.getElementById('btn-save-entry').addEventListener('click', async ()=>{
   const dateVal=document.getElementById('entry-date').value;
   if(!dateVal){showToast('⚠️ Pick a date','warn');return;}
   const note=document.getElementById('entry-note').value.trim();
-  if(editingEntryId){
-    const existing=getEntries().find(e=>e.id===editingEntryId);
-    await saveEntry({...existing, amount, note, date:new Date(dateVal+'T12:00:00').toISOString()});
-    showToast('✅ Purchase updated');
-  } else {
-    await saveEntry({id:uuid(), categoryId:entryForCategoryId, amount, note, date:new Date(dateVal+'T12:00:00').toISOString(), createdAt:new Date().toISOString()});
-    showToast(`✅ ${fmt(amount)} logged`);
+  try {
+    if(editingEntryId){
+      const existing=getEntries().find(e=>e.id===editingEntryId);
+      await saveEntry({...existing, amount, note:note||'', date:new Date(dateVal+'T12:00:00').toISOString()});
+      showToast('✅ Purchase updated');
+    } else {
+      await saveEntry({id:uuid(), categoryId:entryForCategoryId, amount, note:note||'', date:new Date(dateVal+'T12:00:00').toISOString(), createdAt:new Date().toISOString()});
+      showToast(`✅ ${fmt(amount)} logged`);
+    }
+    closeModal('modal-entry');
+  } catch(err) {
+    console.error('Save entry failed:', err);
+    showToast('❌ Save failed: ' + err.message, 'warn');
   }
-  closeModal('modal-entry');
 });
 
 function confirmDeleteEntry(entryId){
@@ -1204,17 +1209,24 @@ window.openAddEntry    = openAddEntry;
 document.getElementById('btn-save-category').addEventListener('click', async ()=>{
   const name=document.getElementById('cat-name').value.trim();
   if(!name){showToast('⚠️ Please enter a name','warn');return;}
-  const budget=parseFloat(document.getElementById('cat-budget').value)||null;
-  const count=parseInt(document.getElementById('cat-count').value)||null;
-  if(editingCategoryId){
-    const existing=getCategories().find(c=>c.id===editingCategoryId);
-    await saveCategory({...existing, name, icon:selectedEmoji, color:selectedColor, budgetLimit:budget, countLimit:count});
-    showToast('✅ Category updated');
-  } else {
-    await saveCategory({id:uuid(), name, icon:selectedEmoji, color:selectedColor, budgetLimit:budget, countLimit:count, createdAt:new Date().toISOString()});
-    showToast('✅ Category added');
+  const budgetRaw=parseFloat(document.getElementById('cat-budget').value);
+  const countRaw=parseInt(document.getElementById('cat-count').value);
+  const budget=isNaN(budgetRaw)||budgetRaw<=0 ? 0 : budgetRaw;
+  const count=isNaN(countRaw)||countRaw<=0 ? 0 : countRaw;
+  try {
+    if(editingCategoryId){
+      const existing=getCategories().find(c=>c.id===editingCategoryId);
+      await saveCategory({...existing, name, icon:selectedEmoji, color:selectedColor, budgetLimit:budget, countLimit:count});
+      showToast('✅ Category updated');
+    } else {
+      await saveCategory({id:uuid(), name, icon:selectedEmoji, color:selectedColor, budgetLimit:budget, countLimit:count, createdAt:new Date().toISOString()});
+      showToast('✅ Category added');
+    }
+    closeModal('modal-add-category');
+  } catch(err) {
+    console.error('Save category failed:', err);
+    showToast('❌ Save failed: ' + err.message, 'warn');
   }
-  closeModal('modal-add-category');
 });
 
 document.getElementById('btn-delete-category').addEventListener('click',()=>{
@@ -1546,34 +1558,40 @@ function renderEmptyAnalytics(){
 // REAL-TIME FIRESTORE LISTENERS + BOOT
 // ════════════════════════════════════════
 function setLoadStatus(msg, pct){
-  document.getElementById('load-status').textContent = msg;
-  document.getElementById('load-bar').style.width = pct + '%';
+  const el = document.getElementById('load-status');
+  const bar = document.getElementById('load-bar');
+  if(el) el.textContent = msg;
+  if(bar) bar.style.width = pct + '%';
 }
 
 function hideLoadingScreen(){
   const el = document.getElementById('loading-screen');
+  if(!el) return;
   el.style.transition = 'opacity 0.4s';
   el.style.opacity = '0';
   setTimeout(() => el.remove(), 420);
 }
 
-let catsReady = false, entriesReady = false;
+let catsReady = false, entriesReady = false, appBooted = false;
 
 function checkReady(){
-  if(catsReady && entriesReady){
+  if(catsReady && entriesReady && !appBooted){
+    appBooted = true;
     hideLoadingScreen();
     renderDashboard();
   }
 }
 
-// Listen to settings doc
-import { onSnapshot as onSnap } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+function reRenderActive(){
+  renderDashboard();
+  if(activePage === 'detail') renderDetailPage();
+  if(activePage === 'analytics') renderAnalytics();
+}
 
 setLoadStatus('Connecting…', 10);
 
-// Settings (one-shot load + local fallback)
-const localSettings = LS.get('at_settings', {currency:'£', theme:'dark'});
-_settings = localSettings;
+// Settings — local first, then sync from Firestore
+_settings = LS.get('at_settings', {currency:'£', theme:'dark'});
 applyTheme(_settings.theme || 'dark');
 
 onSnapshot(settingsDoc, snap => {
@@ -1582,8 +1600,8 @@ onSnapshot(settingsDoc, snap => {
     LS.set('at_settings', _settings);
     applyTheme(_settings.theme || 'dark');
     document.getElementById('currency-prefix').textContent = currency();
-    if(document.getElementById('setting-currency'))
-      document.getElementById('setting-currency').value = _settings.currency;
+    const sel = document.getElementById('setting-currency');
+    if(sel) sel.value = _settings.currency;
   }
 }, () => {/* offline — use local */});
 
@@ -1592,28 +1610,19 @@ setLoadStatus('Loading categories…', 30);
 onSnapshot(catsCol, snap => {
   _categories = snap.docs.map(d => d.data());
   _categories.sort((a,b) => (a.createdAt||'').localeCompare(b.createdAt||''));
-  setLoadStatus('Loading entries…', 60);
   catsReady = true;
+  setLoadStatus('Loading entries…', 60);
   checkReady();
-  // Re-render if already visible
-  if(!document.getElementById('loading-screen')){
-    renderDashboard();
-    if(activePage === 'detail') renderDetailPage();
-    if(activePage === 'analytics') renderAnalytics();
-  }
+  if(appBooted) reRenderActive();
 });
 
 // Entries listener
 onSnapshot(entriesCol, snap => {
   _entries = snap.docs.map(d => d.data());
-  setLoadStatus('Ready!', 100);
   entriesReady = true;
+  setLoadStatus('Ready!', 100);
   checkReady();
-  if(!document.getElementById('loading-screen')){
-    renderDashboard();
-    if(activePage === 'detail') renderDetailPage();
-    if(activePage === 'analytics') renderAnalytics();
-  }
+  if(appBooted) reRenderActive();
 });
 
 // ════════════════════════════════════════
