@@ -1206,7 +1206,6 @@ document.getElementById('btn-save-category').addEventListener('click', async ()=
   if(!name){showToast('⚠️ Please enter a name','warn');return;}
   const budget=parseFloat(document.getElementById('cat-budget').value)||null;
   const count=parseInt(document.getElementById('cat-count').value)||null;
-  if(!budget&&!count){showToast('⚠️ Set at least one limit','warn');return;}
   if(editingCategoryId){
     const existing=getCategories().find(c=>c.id===editingCategoryId);
     await saveCategory({...existing, name, icon:selectedEmoji, color:selectedColor, budgetLimit:budget, countLimit:count});
