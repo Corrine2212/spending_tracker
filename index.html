@@ -62,10 +62,13 @@
 
     html {
       height: 100%;
-      overflow: hidden;
+      height: -webkit-fill-available;
     }
     body {
       height: 100%;
+      height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
       background: var(--bg);
       color: var(--text);
@@ -74,12 +77,12 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Page stack sits above nav — bottom set by JS */
+    /* Page stack fills all space above nav */
     #page-stack {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      bottom: 54px;
+      flex: 1;
+      position: relative;
       overflow: hidden;
+      min-height: 0;
     }
 
     .page {
@@ -283,29 +286,22 @@
     .btn-danger-settings:hover { background:rgba(255,77,109,0.15); }
 
     /* BOTTOM NAV */
-    /* ── NAV – rebuilt from scratch ── */
-    :root { --nav-height: 70px; }
-
+    /* ── NAV – flex child of body, always at bottom ── */
     .bottom-nav {
-      /* Fixed to physical bottom of screen */
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      /* Tall enough for items + home indicator */
-      padding-top: 10px;
-      padding-left: 20px;
-      padding-right: 20px;
-      /* Bottom padding fills home indicator area */
-      padding-bottom: 15px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
       background: var(--nav-bg);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-around;
-      align-items: flex-start;
-      z-index: 9999;
+      padding: 10px 20px 10px;
+      /* This is the key — pushes into home indicator zone */
+      padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+      z-index: 100;
+      width: 100%;
+      box-sizing: border-box;
     }
     .nav-item { display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--text-dim); cursor:pointer; transition:color 0.15s; font-size:0.68rem; font-weight:500; text-transform:uppercase; letter-spacing:0.04em; min-width:60px; }
     .nav-item svg { width:22px; height:22px; }
@@ -463,6 +459,7 @@
       </div>
       <div class="summary-strip">
         <div class="summary-item"><span class="val" id="summary-total">£0.00</span><span class="lbl">Total spent</span></div>
+        <div class="summary-item"><span class="val" id="summary-budget">£0.00</span><span class="lbl">Total budget</span></div>
         <div class="summary-item"><span class="val" id="summary-categories">0</span><span class="lbl">Categories</span></div>
         <div class="summary-item"><span class="val" id="summary-over">0</span><span class="lbl">Over limit</span></div>
       </div>
@@ -933,11 +930,11 @@ function getCategoryStats(cat, yr=viewYear, mo=viewMonth){
   const budgetPct=cat.budgetLimit?totalSpent/cat.budgetLimit:0;
   const countPct=cat.countLimit?count/cat.countLimit:0;
   const maxPct=Math.max(budgetPct,countPct);
-  const status=maxPct>=1?'over':maxPct>=0.8?'warn':'ok';
+  const status=maxPct>1?'over':maxPct>=0.8?'warn':'ok';
   return {totalSpent,count,budgetPct,countPct,status,entries};
 }
 
-const limitClass  = p => p>=1?'over':p>=0.8?'warn':'ok';
+const limitClass  = p => p>1?'over':p>=0.8?'warn':'ok';
 const clamp01     = v => Math.min(1,Math.max(0,v));
 const statusBadge = s => s==='over'?'🚨':s==='warn'?'⚠️':'✅';
 const todayStr    = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -978,9 +975,10 @@ function renderDashboard(){
   document.getElementById('month-label').textContent=`${MONTH_NAMES[viewMonth]} ${viewYear}`;
   document.getElementById('btn-next-month').disabled=isCurrent;
   document.getElementById('currency-prefix').textContent=currency();
-  let totalSpent=0, overCount=0;
-  cats.forEach(c=>{ const s=getCategoryStats(c); totalSpent+=s.totalSpent; if(s.status==='over') overCount++; });
+  let totalSpent=0, overCount=0, totalBudget=0;
+  cats.forEach(c=>{ const s=getCategoryStats(c); totalSpent+=s.totalSpent; if(s.status==='over') overCount++; if(c.budgetLimit) totalBudget+=c.budgetLimit; });
   document.getElementById('summary-total').textContent=fmt(totalSpent);
+  document.getElementById('summary-budget').textContent=totalBudget>0?fmt(totalBudget):'—';
   document.getElementById('month-total').textContent=`${fmt(totalSpent)} spent`;
   document.getElementById('summary-categories').textContent=cats.length;
   document.getElementById('summary-over').textContent=overCount;
@@ -1587,11 +1585,8 @@ function renderEmptyAnalytics(){
 function fitLayout() {
   const nav = document.getElementById('bottom-nav');
   const navH = nav.getBoundingClientRect().height;
-  document.getElementById('page-stack').style.bottom = navH + 'px';
   document.getElementById('fab').style.bottom = (navH + 12) + 'px';
-  document.documentElement.style.setProperty('--nav-height', navH + 'px');
 }
-// Run immediately, then again after paint to catch any safe-area adjustments
 fitLayout();
 requestAnimationFrame(() => requestAnimationFrame(fitLayout));
 window.addEventListener('resize', fitLayout);
