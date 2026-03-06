@@ -74,11 +74,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* PAGE STACK — fills space above nav */
+    /* Page stack sits above nav */
     #page-stack {
       position: fixed;
       top: 0; left: 0; right: 0;
-      bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+      bottom: var(--nav-height);
       overflow: hidden;
     }
 
@@ -283,17 +283,19 @@
     .btn-danger-settings:hover { background:rgba(255,77,109,0.15); }
 
     /* BOTTOM NAV */
+    /* Nav height = 54px items + 34px iPhone home indicator */
+    :root { --nav-height: 88px; }
+
     .bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      height: calc(54px + env(safe-area-inset-bottom, 0px));
+      height: var(--nav-height);
       background: var(--nav-bg);
       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
-      padding: 0 20px;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding: 0 20px 34px;
       display: flex;
       justify-content: space-around;
       align-items: center;
@@ -308,7 +310,7 @@
     #fab {
       position: fixed;
       right: 20px;
-      bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+      bottom: calc(var(--nav-height) + 12px);
       width: 52px; height: 52px;
       background: var(--ok);
       color: #0f0f11;
