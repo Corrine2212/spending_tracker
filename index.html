@@ -297,7 +297,7 @@
       padding-left: 20px;
       padding-right: 20px;
       /* Bottom padding fills home indicator area */
-      padding-bottom: 10px;
+      padding-bottom: 5px;
       background: var(--nav-bg);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -1591,7 +1591,9 @@ function fitLayout() {
   document.getElementById('fab').style.bottom = (navH + 12) + 'px';
   document.documentElement.style.setProperty('--nav-height', navH + 'px');
 }
+// Run immediately, then again after paint to catch any safe-area adjustments
 fitLayout();
+requestAnimationFrame(() => requestAnimationFrame(fitLayout));
 window.addEventListener('resize', fitLayout);
 
 // ── Set page-stack bottom to match actual nav height ──
