@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Allowance Tracker</title>
 
   <!-- PWA -->
@@ -286,7 +286,7 @@
     .btn-danger-settings:hover { background:rgba(255,77,109,0.15); }
 
     /* BOTTOM NAV */
-    /* ── NAV – flex child of body, always at bottom ── */
+    /* ── NAV ── */
     .bottom-nav {
       flex-shrink: 0;
       display: flex;
@@ -296,9 +296,8 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
-      padding: 10px 20px 10px;
-      /* This is the key — pushes into home indicator zone */
-      padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+      padding-top: 10px;
+      padding-bottom: max(env(safe-area-inset-bottom), 16px);
       z-index: 100;
       width: 100%;
       box-sizing: border-box;
