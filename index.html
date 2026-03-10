@@ -942,7 +942,9 @@ function buildLimitsHTML(cat, stats){
   let html='';
   if(cat.budgetLimit){
     const pct=clamp01(stats.budgetPct), cls=limitClass(stats.budgetPct);
-    html+=`<div class="limit-row"><div class="limit-row-header"><span class="limit-row-label">Budget</span><span class="limit-row-value ${cls}">${fmt(stats.totalSpent)} / ${fmt(cat.budgetLimit)}</span></div><div class="progress-track"><div class="progress-fill ${cls}" style="width:${(pct*100).toFixed(1)}%"></div></div></div>`;
+    const remaining = cat.budgetLimit - stats.totalSpent;
+    const remainingStr = remaining >= 0 ? `<span style="color:var(--text-dim);font-size:0.75rem;font-weight:400;"> · ${fmt(remaining)} left</span>` : '';
+    html+=`<div class="limit-row"><div class="limit-row-header"><span class="limit-row-label">Budget</span><span class="limit-row-value ${cls}">${fmt(stats.totalSpent)} / ${fmt(cat.budgetLimit)}${remainingStr}</span></div><div class="progress-track"><div class="progress-fill ${cls}" style="width:${(pct*100).toFixed(1)}%"></div></div></div>`;
   }
   if(cat.countLimit){
     const pct=clamp01(stats.countPct), cls=limitClass(stats.countPct);
